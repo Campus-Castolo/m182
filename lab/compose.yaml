@@ -1,0 +1,39 @@
+version: '3.9'
+
+services:
+  metasploitable:
+    image: tleemcjr/metasploitable2
+    container_name: metasploitable2
+    hostname: victim
+    ports:
+      - 127.0.0.1:80:80 # access vulnerable web apps via host localhost:80
+    networks:
+      - pentest_network
+    tty: true
+    stdin_open: true
+
+  kali:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: kalibox
+    hostname: attacker
+    networks:
+      - pentest_network
+    tty: true
+    stdin_open: true
+    cap_add:
+      - NET_RAW
+      - NET_ADMIN
+    # optional: you can map volumes for persistence or tools
+    # volumes:
+    #   - ./kali-data:/root
+
+networks:
+  pentest_network:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.16.17.0/24
+          gateway: 172.16.17.1
