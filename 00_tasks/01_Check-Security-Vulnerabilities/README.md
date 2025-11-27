@@ -1,11 +1,19 @@
-Gerne – hier ist die Dokumentation exakt im gewünschten Stil.
-Ich setze Ihre Vorlage fort und liefere alle drei geforderten Scan-Dokumentationen plus eine saubere Exploit-Übersicht.
-
----
-
 # Host-Discovery-Scan in docker network
 
 The docker network `pentest_network` has the network address of `172.16.17.0/24`, since `kalibox` and `victim/metasploit` are in the same network we can execute the following command:
+
+## Directory Navigation
+```bash
+01_Check-Security-Vulnerabilities/
+└── exploit-scripts/
+    └── exploits_ssh.rc
+├── hostDiscovery.bash
+├── README.md
+├── serviceDiscovery.bash
+└── serviceScanXml.bash
+```
+
+## Commands
 
 ```bash
 nmap -sn 172.16.17.0/24
