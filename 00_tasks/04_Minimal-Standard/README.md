@@ -1,4 +1,4 @@
-# **General Questions**
+<img width="1412" height="755" alt="1_wYUTKw8NHxvlZ1YZ6o1NNA" src="https://github.com/user-attachments/assets/87694961-a31d-4995-b623-d2aceacaf6eb" /># **General Questions**
 
 ### **1. Explain the term *ICT resilience*.**
 
@@ -54,7 +54,7 @@ If principles are defined only later, systems may require costly redesigns or re
 **Defense-in-Depth** is a security concept that uses **multiple layers of protection** so that if one layer fails, others still defend the system.
 It combines technical, organisational, and physical measures to make attacks more difficult and their impact smaller.
 
-
+<img width="1412" height="755" alt="1_wYUTKw8NHxvlZ1YZ6o1NNA" src="https://github.com/user-attachments/assets/6d1b3aa5-2dfb-4e2a-83cb-3873448f9ad9" />
 
 ---
 
