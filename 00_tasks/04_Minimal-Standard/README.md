@@ -1,4 +1,4 @@
-<img width="1412" height="755" alt="1_wYUTKw8NHxvlZ1YZ6o1NNA" src="https://github.com/user-attachments/assets/87694961-a31d-4995-b623-d2aceacaf6eb" /># **General Questions**
+# **General Questions**
 
 ### **1. Explain the term *ICT resilience*.**
 
