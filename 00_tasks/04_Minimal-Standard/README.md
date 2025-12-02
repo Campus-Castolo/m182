@@ -54,6 +54,8 @@ If principles are defined only later, systems may require costly redesigns or re
 **Defense-in-Depth** is a security concept that uses **multiple layers of protection** so that if one layer fails, others still defend the system.
 It combines technical, organisational, and physical measures to make attacks more difficult and their impact smaller.
 
+
+
 ---
 
 ### **7. What do the abbreviations ICS and APT mean?**
