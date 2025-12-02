@@ -187,6 +187,9 @@ Weak endpoint security; missing full disk encryption
 
 <img width="1290" height="1027" alt="image" src="https://github.com/user-attachments/assets/a1bd9209-ca2f-4bf0-bd8a-729bebb7f944" />
 
+###### source of graphic:`[generate-graph.py](./generate-graph.py)`
+
+
 | Factor              | What It Measures                                                                           | Key Question                                            | Why It Is Important                                                                                   | Interaction With Others                                                                                                    |
 | ------------------- | ------------------------------------------------------------------------------------------ | ------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
 | **Impact**          | Business consequences of the risk (financial, legal, customer trust, service loss)         | *“How bad is it for the business if this risk occurs?”* | Shows how much damage the organization suffers; helps prioritize risks that threaten critical assets. | High Impact × High Likelihood = **major priority**; High Impact × Low Likelihood = **long-term monitoring risk**.          |
