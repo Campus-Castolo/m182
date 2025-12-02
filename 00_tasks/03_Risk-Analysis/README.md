@@ -172,17 +172,18 @@ Weak endpoint security; missing full disk encryption
 
 # Risk Graph
 
-| ID    | Affected System            | Cause / Threat                                     | Impact (1–5) | Severity (1–5) | Risk Score | Risk Level   |
-| ----- | -------------------------- | -------------------------------------------------- | ------------ | -------------- | ---------- | ------------ |
-| **1** | Web Server (Public)        | Outdated CMS leads to exploitation                 | 5            | 4              | **20**     | **Critical** |
-| **2** | Web Server (Public)        | DDoS attack disrupts availability                  | 3            | 4              | **12**     | Medium       |
-| **3** | Web Server (Public)        | Misconfigured firewall exposes admin panel         | 4            | 3              | **12**     | Medium       |
-| **4** | Database Server (Internal) | Weak network segmentation enables lateral movement | 5            | 5              | **25**     | **Critical** |
-| **5** | Database Server (Internal) | Missing encryption → data exposure                 | 5            | 4              | **20**     | **Critical** |
-| **6** | Database Server (Internal) | Backup misconfiguration → data loss                | 4            | 4              | **16**     | High         |
-| **7** | Support Notebook (Mobile)  | Device theft with no full-disk encryption          | 4            | 4              | **16**     | High         |
-| **8** | Support Notebook (Mobile)  | Weak VPN authentication → unauthorized access      | 3            | 4              | **12**     | Medium       |
-| **9** | Support Notebook (Mobile)  | Malware infection due to missing EDR               | 3            | 3              | **9**      | Medium       |
+| ID    | Affected System            | Cause / Threat                                 | Impact (1–5) | Severity (1–5) | Likelihood (1–5) | **Risk Score** | **Risk Level** |
+| ----- | -------------------------- | ---------------------------------------------- | ------------ | -------------- | ---------------- | -------------- | -------------- |
+| **1** | Web Server (Public)        | Outdated CMS → exploitation (RCE/SQLi)         | 5            | 4              | 5                | **100**        | **High**       |
+| **2** | Web Server (Public)        | DDoS attack disrupting availability            | 3            | 4              | 4                | **48**         | Medium         |
+| **3** | Web Server (Public)        | Misconfigured firewall exposes admin interface | 4            | 3              | 4                | **48**         | Medium         |
+| **4** | Database Server (Internal) | Weak segmentation → lateral movement to DB     | 5            | 5              | 4                | **100**        | **High**       |
+| **5** | Database Server (Internal) | Missing encryption → sensitive data exposure   | 5            | 4              | 3                | **60**         | Medium         |
+| **6** | Database Server (Internal) | Faulty backups → permanent data loss           | 4            | 4              | 3                | **48**         | Medium         |
+| **7** | Support Notebook (Mobile)  | Device theft → no full-disk encryption         | 4            | 4              | 4                | **64**         | High           |
+| **8** | Support Notebook (Mobile)  | Weak VPN authentication → unauthorized access  | 3            | 4              | 3                | **36**         | Medium         |
+| **9** | Support Notebook (Mobile)  | Malware infection due to missing EDR           | 3            | 3              | 4                | **36**         | Medium         |
+
 
 <img width="1290" height="1027" alt="image" src="https://github.com/user-attachments/assets/a1bd9209-ca2f-4bf0-bd8a-729bebb7f944" />
 
