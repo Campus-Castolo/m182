@@ -1,249 +1,302 @@
-# **Docker Lab  Simulated Network Environment**
+# **Docker-Based Simulated Environment**
 
-### *Building an Isolated Infrastructure for Network Protocol Analysis*
-
----
-
-## **Why Do We Do This?**
-
-This Docker-based lab environment simulates a **realistic but controlled network** where insecure protocols operate without endangering real systems or data. By containerizing each service, we can:
-
-* **Isolate security testing** from production environments
-* **Reproduce vulnerable configurations** safely and consistently
-* **Capture authentic network traffic** without ethical or legal concerns
-* **Learn offensive and defensive techniques** in a sandboxed environment
-* **Demonstrate real-world attack vectors** that still exist in legacy systems
+## *Insecure Protocol Lab for Wireshark & Network Forensics*
 
 ---
 
-## **What Purpose Does It Serve?**
+### **Why We Create This Environment**
 
-This lab enables you to:
+Modern systems rely heavily on encrypted communication, but many legacy protocols (FTP, HTTP, SMTP, POP3, Telnet, DNS) still transmit data **in plaintext**.
+To demonstrate how attackers extract sensitive information from unencrypted traffic, we need a controlled, reproducible, and isolated environment.
 
-1. **Capture plaintext credentials** transmitted over FTP, HTTP, SMTP, and other insecure protocols
-2. **Analyze network traffic patterns** using Wireshark in a controlled setting
-3. **Understand protocol-level vulnerabilities** that persist in many enterprise environments
-4. **Practice forensic analysis** by reconstructing sessions and extracting artifacts
-5. **Compare insecure vs. secure implementations** (e.g., FTP vs. FTPS, HTTP vs. HTTPS)
+This Docker lab enables:
 
-The Docker environment provides a **repeatable, version-controlled infrastructure** that can be shared, modified, and redeployed with a single command.
-
----
-
-## **Legal Safekeeping**
-
-### **� Ethical Use Only**
-
-All activities in this lab are conducted in a **fully isolated, self-contained Docker network**.
-
-* **Only perform these tests on your own infrastructure**
-* **Never capture traffic on networks you do not own or have explicit permission to test**
-* **Do not use these techniques for unauthorized access or malicious purposes**
-* This lab is designed for **educational and defensive security training** only
-
-**Unauthorized network interception is illegal in most jurisdictions** (e.g., Wiretap Act in the US, GDPR in Europe, � 202a/b StGB in Germany).
+* Safe experimentation without virtual machine overhead
+* Easy reproducibility
+* Fast protocol switching
+* Realistic traffic for Wireshark captures
+* Controlled attack simulations (e.g., credential theft, packet inspection, protocol reconstruction)
 
 ---
 
-## **Structure**
+### **What Purpose This Environment Serves**
 
-The Docker lab consists of the following components:
+This environment is used for:
 
-### **1. Network Infrastructure**
+### ** Demonstration of insecure protocols**
 
-* **Custom Docker network:** `network-forensics-net` (172.20.0.0/16)
-* **Isolated subnet** to prevent interference with host or other containers
-* **Bridge networking** for container-to-container communication
+Real login attempts → credentials exposed
+Email transmission → visible headers & bodies
+DNS lookups → visible user activity patterns
 
-### **2. Service Containers**
+### ** Wireshark practice**
 
-| Service    | Container Image            | Purpose                              | Port(s)       |
-| ---------- | -------------------------- | ------------------------------------ | ------------- |
-| **FTP**    | `stilliard/pure-ftpd`      | Plaintext authentication & file xfer | 21, 30000-30009 |
-| **HTTP**   | `nginx:alpine`             | Unsecured web server with login form | 80            |
-| **SMTP**   | `mailhog/mailhog`          | Plaintext email transmission         | 1025, 8025    |
-| **DNS**    | `strm/dnsmasq`             | Query logging and metadata exposure  | 53            |
-| **Client** | `alpine:latest`            | Test client for protocol interaction | -             |
+* TCP stream reconstruction
+* Credential extraction
+* Packet-based forensic analysis
 
-### **3. Wireshark Host**
+### ** Autopsy Forensics**
 
-* **Your PC (not containerized)** runs Wireshark
-* Captures traffic on the Docker bridge interface
-* Analyzes protocols using display filters and TCP stream reconstruction
+* Importing PCAP files
+* Reconstructing communication flows
+* Identifying exfiltration or suspicious traffic
+
+### ** Education & Cybersecurity Awareness**
+
+Students learn **why** insecure protocols must be replaced with secure alternatives like SSH, HTTPS, SMTPS, DNSSEC, FTPS.
 
 ---
 
-## **Quickstart**
+### **Legal Safekeeping Notice**
 
-### **Prerequisites**
+This lab is intentionally designed to expose credentials and sensitive data **for educational purposes only**.
 
-* Docker Desktop or Docker Engine installed
-* Docker Compose (v2.0+)
-* Wireshark installed on host machine
-* Basic command-line knowledge
+By using this environment, you agree that:
 
-### **Step 1: Clone or Navigate to Project**
+* You run it **only on your own system**
+* You use it **only in isolated networks / lab setups**
+* You must **never** use these techniques on real networks, production systems, or systems you do not own
+* The project is strictly for **training and research**
 
-```bash
-cd 02_assessment/01_wireshark/01_Docker
+> **Unauthorized packet capturing or credential extraction is illegal under Swiss law (StGB Art. 143 / 143bis) and most international regulations.**
+
+This project keeps everything safe by using Docker containers with no real-world connectivity or persistence.
+
+---
+
+### **Directory Structure**
+
+```
+/Docker
+│
+├── docker-compose.yml        # Full insecure protocol lab
+├── ftp/                      # FTP server & test user config
+├── http/                     # Insecure HTTP login page
+├── smtp/                     # SMTP server for plain mail
+├── dns/                      # DNS server with query logging
+│
+├── client/                   # Test machine (Alpine/Ubuntu)
+│
+├── scripts/
+│   ├── generate-traffic.sh   # Optional traffic generator
+│   └── test-login.sh         # Used for Wireshark demos
+│
+└── docs/
+    ├── usage.md              # How to interact with services
+    ├── protocol-overview.md  # Description of each insecure protocol
+    └── mitigation.md         # How to secure them properly
 ```
 
-### **Step 2: Start the Lab Environment**
+Each protocol is isolated but shares the same custom Docker network.
+
+---
+
+# **Quickstart**
+
+### **1. Clone the repository**
 
 ```bash
-docker-compose up -d
+git clone <your-repo-url>
+cd Docker
 ```
 
-This will:
-* Create the `network-forensics-net` network
-* Start all service containers (FTP, HTTP, SMTP, DNS, Client)
-* Assign static IP addresses to each container
+---
 
-### **Step 3: Verify Containers are Running**
+# **2. Start the network first (required for static IPs)**
+
+If you have a shared network definition file:
+
+```bash
+docker network create \
+  --subnet=192.168.10.0/24 \
+  forensic-net
+```
+
+If each compose defines the network itself → **skip this step**.
+
+---
+
+# **3. Start each service individually**
+
+Since every service has **its own docker-compose.yml**, navigate into each folder and start it.
+
+---
+
+### **Start FTP**
+
+```bash
+cd ftp
+docker compose up -d
+cd ..
+```
+
+---
+
+### **Start HTTP**
+
+```bash
+cd http
+docker compose up -d
+cd ..
+```
+
+---
+
+### **Start SMTP**
+
+```bash
+cd smtp
+docker compose up -d
+cd ..
+```
+
+---
+
+### **Start DNS**
+
+```bash
+cd dns
+docker compose up -d
+cd ..
+```
+
+---
+
+### **Start Client**
+
+```bash
+cd client
+docker compose up -d
+cd ..
+```
+
+---
+
+# **4. Verify running containers**
 
 ```bash
 docker ps
 ```
 
-You should see all services in the "Up" state.
+Expected containers:
 
-### **Step 4: Identify the Docker Network Interface**
+* `ftp-server`
+* `http-server`
+* `smtp-server`
+* `dns-server`
+* `forensic-client`
 
-**On Windows:**
+---
+
+# **5. Start generating traffic**
+
+Open a shell in the **client** container:
+
 ```bash
-ipconfig
-# Look for "vEthernet (WSL)" or Docker bridge adapter
+docker exec -it forensic-client sh
 ```
 
-**On Linux/macOS:**
-```bash
-ifconfig
-# Look for "docker0" or "br-<network-id>"
-```
+Now run example traffic to capture with Wireshark:
 
-### **Step 5: Start Wireshark Capture**
-
-1. Open Wireshark
-2. Select the Docker network interface
-3. Start capturing traffic
-4. Apply display filters as needed (e.g., `ftp`, `http`, `smtp`, `dns`)
-
-### **Step 6: Generate Test Traffic**
-
-**Enter the client container:**
-```bash
-docker exec -it forensics-client sh
-```
-
-**Test FTP:**
-```bash
-ftp 172.20.0.10
-# User: testuser
-# Pass: testpass123
-```
-
-**Test HTTP:**
-```bash
-curl -X POST http://172.20.0.20/login \
-  -d "username=admin&password=secret123"
-```
-
-**Test SMTP:**
-```bash
-telnet 172.20.0.30 1025
-EHLO client
-MAIL FROM:<attacker@test.com>
-RCPT TO:<victim@test.com>
-DATA
-Subject: Test Mail
-This is a plaintext email.
-.
-QUIT
-```
-
-**Test DNS:**
-```bash
-nslookup malicious-domain.com 172.20.0.40
-```
-
-### **Step 7: Stop the Lab**
+### **FTP (plaintext credentials)**
 
 ```bash
-docker-compose down
-```
-
-To also remove volumes:
-```bash
-docker-compose down -v
+ftp 192.168.10.10
 ```
 
 ---
 
-## **FAQ**
+### **HTTP POST login sniffing**
 
-### **Q: Can I run this on Windows/macOS?**
-**A:** Yes, Docker Desktop supports all platforms. Network interface names may vary.
-
-### **Q: Why can't I see traffic in Wireshark?**
-**A:**
-* Ensure you're capturing on the correct Docker interface
-* Check that containers are running (`docker ps`)
-* Try disabling promiscuous mode if on WiFi
-* On Windows, may need to run Wireshark as Administrator
-
-### **Q: How do I add more services?**
-**A:** Edit `docker-compose.yml` and add new service definitions with appropriate network configurations.
-
-### **Q: Are these containers production-ready?**
-**A:** **No.** These are deliberately insecure for educational purposes. Never deploy these configurations in production.
-
-### **Q: Can I capture HTTPS/TLS traffic?**
-**A:** TLS-encrypted traffic cannot be decrypted in Wireshark without private keys. This lab focuses on plaintext protocols.
-
-### **Q: How do I extract credentials from captures?**
-**A:** Use Wireshark's "Follow TCP Stream" feature or filter by protocol (e.g., `ftp.request.command == "PASS"`).
-
-### **Q: What's the difference between MailHog and a real SMTP server?**
-**A:** MailHog is a testing tool that captures emails without sending them. It provides a web UI (port 8025) to inspect messages.
-
-### **Q: Can I use this for CTF competitions?**
-**A:** Yes, this setup is ideal for CTF preparation and network forensics challenges.
-
-### **Q: How do I persist capture files?**
-**A:** Save PCAPs to the `/pcap/` directory (mounted volume) for persistent storage.
-
-### **Q: What if containers fail to start?**
-**A:** Check logs with `docker-compose logs <service-name>` and verify port availability.
+```bash
+curl -d "user=test&pass=1234" http://192.168.10.20/login
+```
 
 ---
 
-## **Next Steps**
+### **SMTP plaintext email**
 
-* [Wireshark Analysis Guide](../docs/wireshark-guide.md)
-* [Capture File Examples](../pcap/)
-* [HTTP Login Form Source](./http-server/login.html)
-* [Parent README  Project Overview](../README.md)
-
----
-
-## **Contributing**
-
-To extend this lab:
-1. Fork the repository
-2. Add new service definitions to `docker-compose.yml`
-3. Update this README with usage instructions
-4. Submit a pull request
+```bash
+echo -e "EHLO test\nMAIL FROM:<a@test>\nRCPT TO:<b@test>\nDATA\nHallo Welt\n.\nQUIT" \
+  | nc 192.168.10.30 1025
+```
 
 ---
 
-## **References**
+### **DNS Query Leakage**
 
-* [Docker Networking Documentation](https://docs.docker.com/network/)
-* [Wireshark User Guide](https://www.wireshark.org/docs/wsug_html_chunked/)
-* [OWASP Testing Guide  Network Layer](https://owasp.org/www-project-web-security-testing-guide/)
+```bash
+dig @192.168.10.40 google.com
+```
+
+**Done. Start Wireshark and sniff the forensic-net traffic.**
 
 ---
 
-**Last Updated:** 2025-12-09
-**Author:** [Your Name]
-**License:** MIT (Educational Use)
+### **5. Capture traffic with Wireshark**
+
+On your host:
+
+1. Choose the Docker network interface
+
+2. Apply filters like:
+
+   * `ftp`
+   * `http`
+   * `smtp`
+   * `dns`
+   * `tcp.stream eq 1`
+
+3. Begin reconstructing plaintext credentials
+
+---
+
+# ## **FAQ**
+
+### **Why Docker instead of Virtual Machines?**
+
+* Faster startup
+* Lower resource usage
+* Perfect reproducibility
+* Easy version control
+* Cleaner network isolation
+
+---
+
+### **Can this harm my computer or network?**
+
+No — as long as:
+
+* You run it *only inside Docker*
+* You do not expose ports externally
+* You do not bridge it into your real network
+
+All protocols stay isolated inside the `network-forensics-net` subnet.
+
+---
+
+### **Does this simulate real-world attacks?**
+
+Yes — this is **exactly** how attackers steal plaintext credentials when insecure protocols are used.
+
+You will see **real captured passwords** in FTP, Telnet, POP3, and HTTP.
+
+---
+
+### **Can I extend this lab?**
+
+Absolutely. Common additions:
+
+* **Telnet server**
+* **POP3 server**
+* **IMAP without TLS**
+* **MITM simulation via arpspoof**
+* **Custom Python C2 server**
+
+---
+
+### **Where do PCAP files go?**
+
+You can export them manually from Wireshark or use:
+
+`/analysis/pcap/` 
