@@ -2,6 +2,7 @@ version: "3.9"
 
 services:
   client:
+    hostname: forensic-client
     image: alpine:latest
     container_name: forensic-client
     command: sh -c "apk add --no-cache lftp curl bind-tools netcat-openbsd busybox-extras && sleep infinity"
@@ -13,6 +14,8 @@ services:
 
 networks:
   forensic-net:
+    driver: bridge
     ipam:
       config:
         - subnet: 192.168.10.0/24
+          gateway: 192.168.10.1
