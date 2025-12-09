@@ -1,0 +1,19 @@
+version: "3.9"
+
+services:
+  smtp-server:
+    image: mailhog/mailhog
+    container_name: smtp-server
+    networks:
+      forensic-net:
+        ipv4_address: 192.168.10.30
+    ports:
+      - "1025:1025" # SMTP plaintext
+      - "8025:8025" # Web UI to preview email
+    restart: unless-stopped
+
+networks:
+  forensic-net:
+    ipam:
+      config:
+        - subnet: 192.168.10.0/24

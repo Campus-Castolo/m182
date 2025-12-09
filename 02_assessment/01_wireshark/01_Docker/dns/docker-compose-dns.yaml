@@ -1,0 +1,28 @@
+version: "3.9"
+
+services:
+  dns-server:
+    image: andyshinn/dnsmasq:2.78
+    container_name: dns-server
+    command: [
+      log-queries
+      log-facility=/var/log/dnsmasq.log
+      address=/test.local/192.168.10.20
+    ]
+    cap_add:
+      - NET_ADMIN
+    volumes:
+      - ./dnsmasq.conf:/etc/dnsmasq.conf
+    networks:
+      forensic-net:
+        ipv4_address: 192.168.10.40
+    ports:
+      - "53:53/udp"
+      - "53:53/tcp"
+    restart: unless-stopped
+
+networks:
+  forensic-net:
+    ipam:
+      config:
+        - subnet: 192.168.10.0/24

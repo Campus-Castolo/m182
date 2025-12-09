@@ -1,0 +1,20 @@
+version: "3.9"
+
+services:
+  http-server:
+    image: nginx:latest
+    container_name: http-server
+    volumes:
+      - ./html:/usr/share/nginx/html:ro
+    networks:
+      forensic-net:
+        ipv4_address: 192.168.10.20
+    ports:
+      - "8080:80" # exposed for browser testing
+    restart: unless-stopped
+
+networks:
+  forensic-net:
+    ipam:
+      config:
+        - subnet: 192.168.10.0/24
