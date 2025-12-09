@@ -104,7 +104,7 @@ cd Docker
 
 # **2. Start the network first (required for static IPs)**
 
-If you have a shared network definition file:
+> This is just a formality, however if you want to be 100% sure that your docker network gets created execute the command listed below:
 
 ```bash
 docker network create \
@@ -112,7 +112,7 @@ docker network create \
   forensic-net
 ```
 
-If each compose defines the network itself → **skip this step**.
+> NOTE: You do not need this step since this is also defined in each docker compose.
 
 ---
 
