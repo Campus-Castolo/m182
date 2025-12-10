@@ -21,27 +21,27 @@ This Docker lab provides:
 
 ## **What This Environment Is Used For**
 
-### ✔ **Demonstration of insecure protocols**
+### **Demonstration of insecure protocols**
 
 * FTP logins → user/password in plaintext
 * HTTP login forms → POST data visible
 * SMTP emails → headers + body exposed
 * DNS queries → user activity fingerprints
 
-### ✔ **Wireshark training**
+### **Wireshark training**
 
 * Packet inspection
 * TCP stream reconstruction
 * Credential extraction
 * Protocol layer analysis
 
-### ✔ **Autopsy Forensics**
+### **Autopsy Forensics**
 
 * Importing PCAP files
 * Reconstructing communication flows
 * Identifying suspicious or exfiltration traffic
 
-### ✔ **Cybersecurity Awareness**
+### **Cybersecurity Awareness**
 
 Students clearly see **why** insecure protocols must be replaced with secure alternatives like:
 
