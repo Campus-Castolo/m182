@@ -34,8 +34,8 @@ The lab includes insecure versions of:
 * **Telnet** *(optional bonus)* – Plaintext shell access
 * **POP3** *(optional bonus)* – Plaintext mailbox access
 
-*Docker Compose file:*
-`[link-placeholder-compose.yml]`
+*Docker Compose files:*
+[Docker Compose Files](./01_Docker/README.md)
 
 ---
 
