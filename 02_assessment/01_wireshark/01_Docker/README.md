@@ -4,96 +4,103 @@
 
 ---
 
-### **Why We Create This Environment**
+## **Why This Environment Exists**
 
-Modern systems rely heavily on encrypted communication, but many legacy protocols (FTP, HTTP, SMTP, POP3, Telnet, DNS) still transmit data **in plaintext**.
-To demonstrate how attackers extract sensitive information from unencrypted traffic, we need a controlled, reproducible, and isolated environment.
+Modern systems rely heavily on encrypted communication, yet many legacy protocols (FTP, HTTP, SMTP, POP3, Telnet, DNS) still transmit sensitive information **in plaintext**.
+To demonstrate how attackers intercept, analyze, and exploit these weaknesses, we need a **controlled, reproducible, isolated environment** that mirrors real-world insecure communication.
 
-This Docker lab enables:
+This Docker lab provides:
 
-* Safe experimentation without virtual machine overhead
-* Easy reproducibility
-* Fast protocol switching
+* Safe experimentation without virtual machines
+* Fast startup and reproducible setups
 * Realistic traffic for Wireshark captures
-* Controlled attack simulations (e.g., credential theft, packet inspection, protocol reconstruction)
+* Controlled attack simulations
+* A secure sandbox for forensic analysis
 
 ---
 
-### **What Purpose This Environment Serves**
+## **What This Environment Is Used For**
 
-This environment is used for:
+### ✔ **Demonstration of insecure protocols**
 
-### ** Demonstration of insecure protocols**
+* FTP logins → user/password in plaintext
+* HTTP login forms → POST data visible
+* SMTP emails → headers + body exposed
+* DNS queries → user activity fingerprints
 
-Real login attempts → credentials exposed
-Email transmission → visible headers & bodies
-DNS lookups → visible user activity patterns
+### ✔ **Wireshark training**
 
-### ** Wireshark practice**
-
+* Packet inspection
 * TCP stream reconstruction
 * Credential extraction
-* Packet-based forensic analysis
+* Protocol layer analysis
 
-### ** Autopsy Forensics**
+### ✔ **Autopsy Forensics**
 
 * Importing PCAP files
 * Reconstructing communication flows
-* Identifying exfiltration or suspicious traffic
+* Identifying suspicious or exfiltration traffic
 
-### ** Education & Cybersecurity Awareness**
+### ✔ **Cybersecurity Awareness**
 
-Students learn **why** insecure protocols must be replaced with secure alternatives like SSH, HTTPS, SMTPS, DNSSEC, FTPS.
+Students clearly see **why** insecure protocols must be replaced with secure alternatives like:
+
+* SSH
+* HTTPS / TLS
+* SMTPS
+* FTPS
+* DNSSEC
 
 ---
 
-### **Legal Safekeeping Notice**
+## **Legal Safekeeping Notice**
 
-This lab is intentionally designed to expose credentials and sensitive data **for educational purposes only**.
+This project is intentionally designed to expose credentials and sensitive data **only within an isolated lab environment**.
 
 By using this environment, you agree that:
 
 * You run it **only on your own system**
-* You use it **only in isolated networks / lab setups**
-* You must **never** use these techniques on real networks, production systems, or systems you do not own
-* The project is strictly for **training and research**
+* You use it **only in isolated, non-production networks**
+* You never apply these techniques outside your authorized environment
+* You understand that the project is for **education and research only**
 
-> **Unauthorized packet capturing or credential extraction is illegal under Swiss law (StGB Art. 143 / 143bis) and most international regulations.**
+> ⚠️ **Unauthorized packet capturing or credential extraction is illegal** under Swiss law (StGB Art. 143 / 143bis) and most international jurisdictions.
 
-This project keeps everything safe by using Docker containers with no real-world connectivity or persistence.
+This environment uses Docker containers with no external connectivity, ensuring safety.
 
 ---
 
-### **Directory Structure**
+## **Directory Structure**
 
 ```
-/Docker
-│
-├── docker-compose.yml        # Full insecure protocol lab
-├── ftp/                      # FTP server & test user config
-├── http/                     # Insecure HTTP login page
-├── smtp/                     # SMTP server for plain mail
-├── dns/                      # DNS server with query logging
-│
-├── client/                   # Test machine (Alpine/Ubuntu)
-│
-├── scripts/
-│   ├── generate-traffic.sh   # Optional traffic generator
-│   └── test-login.sh         # Used for Wireshark demos
-│
-└── docs/
-    ├── usage.md              # How to interact with services
-    ├── protocol-overview.md  # Description of each insecure protocol
-    └── mitigation.md         # How to secure them properly
+Docker/
+ ├── ftp/
+ │    └── docker-compose.yml
+ ├── http/
+ │    └── docker-compose.yml
+ ├── smtp/
+ │    └── docker-compose.yml
+ ├── dns/
+ │    └── docker-compose.yml
+ ├── client/
+ │    └── docker-compose.yml
+ ├── scripts/
+ │    └── generate-traffic.sh
+ ├── Makefile
+ └── README.md
 ```
 
-Each protocol is isolated but shares the same custom Docker network.
+Each protocol runs in its own isolated container, all sharing the network:
+
+```
+forensic-net (192.168.10.0/24)
+```
 
 ---
 
 # **Quickstart**
 
-### **1. Clone the repository**
+## **1. Clone the Repository**
 
 ```bash
 git clone https://github.com/Campus-Castolo/m182
@@ -102,25 +109,21 @@ cd Docker
 
 ---
 
-# **2. Start the network first (required for static IPs)**
+## **2. (Optional) Create the Docker Network Manually**
 
-> This is just a formality, however if you want to be 100% sure that your docker network gets created execute the command listed below:
+Only needed if you want to ensure the network exists ahead of time:
 
 ```bash
-docker network create \
-  --subnet=192.168.10.0/24 \
-  forensic-net
+docker network create --subnet=192.168.10.0/24 forensic-net
 ```
 
-> NOTE: You do not need this step since this is also defined in each docker compose.
+> Note: Each docker-compose file already defines this network, so this step is optional.
 
 ---
 
-# **3. Start each service individually**
+## **3. Start Each Service Individually**
 
-Since every service has **its own docker-compose.yml**, navigate into each folder and start it.
-
----
+Because each service has its own compose file:
 
 ### **Start FTP**
 
@@ -130,8 +133,6 @@ docker compose up -d
 cd ..
 ```
 
----
-
 ### **Start HTTP**
 
 ```bash
@@ -139,8 +140,6 @@ cd http
 docker compose up -d
 cd ..
 ```
-
----
 
 ### **Start SMTP**
 
@@ -150,8 +149,6 @@ docker compose up -d
 cd ..
 ```
 
----
-
 ### **Start DNS**
 
 ```bash
@@ -159,8 +156,6 @@ cd dns
 docker compose up -d
 cd ..
 ```
-
----
 
 ### **Start Client**
 
@@ -172,131 +167,122 @@ cd ..
 
 ---
 
-# **4. Verify running containers**
+## **4. Verify Running Containers**
 
 ```bash
 docker ps
 ```
 
-Expected containers:
+You should see:
 
-* `ftp-server`
-* `http-server`
-* `smtp-server`
-* `dns-server`
-* `forensic-client`
+* ftp-server
+* http-server
+* smtp-server
+* dns-server
+* forensic-client
 
 ---
 
-# **5. Start generating traffic**
+## **5. Generate Traffic for Wireshark Captures**
 
-Open a shell in the **client** container:
+Open a shell inside the forensic client:
 
 ```bash
 docker exec -it forensic-client sh
 ```
 
-Now run example traffic to capture with Wireshark:
-
-### **FTP (plaintext credentials)**
+### **FTP – Plaintext Credentials**
 
 ```bash
 ftp 192.168.10.10
 ```
 
----
-
-### **HTTP POST login sniffing**
+### **HTTP – POST Login Sniffing**
 
 ```bash
 curl -d "user=test&pass=1234" http://192.168.10.20/login
 ```
 
----
-
-### **SMTP plaintext email**
+### **SMTP – Plaintext Email**
 
 ```bash
 echo -e "EHLO test\nMAIL FROM:<a@test>\nRCPT TO:<b@test>\nDATA\nHallo Welt\n.\nQUIT" \
-  | nc 192.168.10.30 1025
+ | nc 192.168.10.30 1025
 ```
 
----
-
-### **DNS Query Leakage**
+### **DNS – Query Leakage**
 
 ```bash
 dig @192.168.10.40 google.com
 ```
 
-**Done. Start Wireshark and sniff the forensic-net traffic.**
+---
+
+## **6. Capture Traffic with Wireshark**
+
+### On your host machine:
+
+1. Select the Docker network interface
+2. Apply useful filters:
+
+```
+ftp
+http
+smtp
+dns
+tcp.stream eq 1
+```
+
+3. Reconstruct plaintext credentials and data transfers.
 
 ---
 
-### **5. Capture traffic with Wireshark**
+# **FAQ**
 
-On your host:
-
-1. Choose the Docker network interface
-
-2. Apply filters like:
-
-   * `ftp`
-   * `http`
-   * `smtp`
-   * `dns`
-   * `tcp.stream eq 1`
-
-3. Begin reconstructing plaintext credentials
-
----
-
-# ## **FAQ**
-
-### **Why Docker instead of Virtual Machines?**
+### ❓ Why use Docker instead of Virtual Machines?
 
 * Faster startup
 * Lower resource usage
+* Cleaner isolation
+* Easier version control
 * Perfect reproducibility
-* Easy version control
-* Cleaner network isolation
 
 ---
 
-### **Can this harm my computer or network?**
+### ❓ Can this harm my real network?
 
 No — as long as:
 
-* You run it *only inside Docker*
-* You do not expose ports externally
-* You do not bridge it into your real network
-
-All protocols stay isolated inside the `network-forensics-net` subnet.
+* You keep everything in Docker
+* You do not expose ports unnecessarily
+* You do not bridge the containers into your LAN
 
 ---
 
-### **Does this simulate real-world attacks?**
+### ❓ Does this simulate real attacks?
 
-Yes — this is **exactly** how attackers steal plaintext credentials when insecure protocols are used.
+Yes — you will capture **real plaintext passwords**, emails, and DNS data.
 
-You will see **real captured passwords** in FTP, Telnet, POP3, and HTTP.
-
----
-
-### **Can I extend this lab?**
-
-Absolutely. Common additions:
-
-* **Telnet server**
-* **POP3 server**
-* **IMAP without TLS**
-* **MITM simulation via arpspoof**
-* **Custom Python C2 server**
+This is exactly how attackers exploit insecure protocols.
 
 ---
 
-### **Where do PCAP files go?**
+### ❓ Can I extend this lab?
 
-You can export them manually from Wireshark or use:
+Yes! Suggestions:
 
-`/analysis/pcap/` 
+* Telnet server
+* POP3 server
+* IMAP without TLS
+* ARP spoofing with Ettercap
+* Custom Python C2 channel
+
+---
+
+### ❓ Where should I save PCAP files?
+
+A recommended folder:
+
+```
+/analysis/pcap/
+```

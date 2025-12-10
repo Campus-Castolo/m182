@@ -1,0 +1,45 @@
+# ===============================
+#  Docker Forensic Lab Automation
+# ===============================
+
+SERVICES = ftp http smtp dns client
+
+.PHONY: up down rebuild traffic logs clean network
+
+# Start all services (individual docker-compose files)
+up:
+	@echo ">>> Starting forensic lab services..."
+	@for dir in $(SERVICES); do \
+		echo ">>> Starting $$dir"; \
+		docker compose -f $$dir/docker-compose.yml up -d; \
+	done
+	@echo ">>> All services started."
+
+# Stop all services
+down:
+	@echo ">>> Stopping all services..."
+	@for dir in $(SERVICES); do \
+		echo ">>> Stopping $$dir"; \
+		docker compose -f $$dir/docker-compose.yml down; \
+	done
+
+# Rebuild everything
+rebuild: down up
+
+# Run traffic generator inside the client container
+traffic:
+	@echo ">>> Running traffic simulation..."
+	@docker exec -it forensic-client sh /scripts/generate-traffic.sh
+
+# Show logs of all containers
+logs:
+	@for dir in $(SERVICES); do \
+		echo ">>> Logs for $$dir"; \
+		docker compose -f $$dir/docker-compose.yml logs --tail=50; \
+	done
+
+# Completely clean environment
+clean: down
+	@echo ">>> Removing unused Docker resources..."
+	docker system prune -af
+
