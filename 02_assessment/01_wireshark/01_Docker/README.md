@@ -4,73 +4,72 @@
 
 ---
 
-## **Why This Environment Exists**
+## **Purpose of This Environment**
 
-Modern systems rely heavily on encrypted communication, yet many legacy protocols (FTP, HTTP, SMTP, POP3, Telnet, DNS) still transmit sensitive information **in plaintext**.
-To demonstrate how attackers intercept, analyze, and exploit these weaknesses, we need a **controlled, reproducible, isolated environment** that mirrors real-world insecure communication.
+Modern IT infrastructures rely on encrypted communication, but many legacy protocols (FTP, HTTP, SMTP, POP3, Telnet, DNS) still transmit sensitive information **without encryption**.
+This environment exists to safely demonstrate:
 
-This Docker lab provides:
+* how plaintext protocols behave
+* how attackers intercept and analyze traffic
+* how forensic tools reconstruct insecure communications
 
-* Safe experimentation without virtual machines
-* Fast startup and reproducible setups
-* Realistic traffic for Wireshark captures
-* Controlled attack simulations
-* A secure sandbox for forensic analysis
+A controlled Docker lab allows:
 
----
-
-## **What This Environment Is Used For**
-
-### **Demonstration of insecure protocols**
-
-* FTP logins → user/password in plaintext
-* HTTP login forms → POST data visible
-* SMTP emails → headers + body exposed
-* DNS queries → user activity fingerprints
-
-### **Wireshark training**
-
-* Packet inspection
-* TCP stream reconstruction
-* Credential extraction
-* Protocol layer analysis
-
-### **Autopsy Forensics**
-
-* Importing PCAP files
-* Reconstructing communication flows
-* Identifying suspicious or exfiltration traffic
-
-### **Cybersecurity Awareness**
-
-Students clearly see **why** insecure protocols must be replaced with secure alternatives like:
-
-* SSH
-* HTTPS / TLS
-* SMTPS
-* FTPS
-* DNSSEC
+* clean isolation
+* reproducible network behavior
+* fast deployment
+* realistic traffic generation
+* safe packet-capture for training and investigations
 
 ---
 
-## **Legal Safekeeping Notice**
+## **What You Can Do With This Lab**
 
-This project is intentionally designed to expose credentials and sensitive data **only within an isolated lab environment**.
+### ✔ Demonstrate Insecure Protocols
 
-By using this environment, you agree that:
+* **FTP** → credentials in plaintext
+* **HTTP** → POST login data visible
+* **SMTP** → sender, receiver & message body exposed
+* **DNS** → query metadata leaks user activity
+* **POP3 / Telnet (optional)** → planned but not yet implemented
 
-* You run it **only on your own system**
-* You use it **only in isolated, non-production networks**
-* You never apply these techniques outside your authorized environment
-* You understand that the project is for **education and research only**
+### ✔ Wireshark Training & Hands-On Forensics
 
-> ⚠️ **Unauthorized packet capturing or credential extraction is illegal** under Swiss law (StGB Art. 143 / 143bis) and most international jurisdictions.
+* Inspect packets
+* Reassemble TCP streams
+* Extract credentials
+* Identify suspicious traffic
+* Build PCAP datasets for Autopsy or other forensic tools
 
-This environment uses Docker containers with no external connectivity, ensuring safety.
+### ✔ Cybersecurity Awareness
+
+Shows students *why* secure replacements exist:
+
+| Insecure | Secure      |
+| -------- | ----------- |
+| FTP      | FTPS / SFTP |
+| HTTP     | HTTPS       |
+| SMTP     | SMTPS       |
+| DNS      | DNSSEC      |
+| Telnet   | SSH         |
 
 ---
 
-## **Directory Structure**
+## **Legal & Ethical Notice**
+
+This environment is intentionally insecure **by design** and must **only** be used:
+
+* on systems you own
+* in isolated, non-production networks
+* for training, research, or internal education
+
+> ⚠️ **Unauthorized packet sniffing, interception, or credential extraction is illegal** under Swiss law (StGB Art. 143 / 143bis) and most international jurisdictions.
+
+All containers are restricted to an internal Docker network to ensure safety.
+
+---
+
+## **Repository Structure**
 
 ```
 Docker/
@@ -90,11 +89,13 @@ Docker/
  └── README.md
 ```
 
-Each protocol runs in its own isolated container, all sharing the network:
+Each service is isolated into its own stack. All share the same internal network:
 
 ```
 forensic-net (192.168.10.0/24)
 ```
+
+> POP3 and Telnet are **planned modules** but not implemented yet.
 
 ---
 
@@ -111,66 +112,60 @@ cd Docker
 
 ## **2. (Optional) Create the Docker Network Manually**
 
-Only needed if you want to ensure the network exists ahead of time:
+Each compose file defines the network automatically, but you may create it ahead of time:
 
 ```bash
 docker network create --subnet=192.168.10.0/24 forensic-net
 ```
 
-> Note: Each docker-compose file already defines this network, so this step is optional.
+---
+
+## **3. Starting Services (Makefile-Powered)**
+
+Instead of entering each folder manually, you now use:
+
+### ▶ Start **all** services
+
+```bash
+make up
+```
+
+### ▶ Start an individual stack
+
+```bash
+make up-ftp
+make up-http
+make up-smtp
+make up-dns
+make up-client
+```
+
+### ▶ Stop everything
+
+```bash
+make down
+```
+
+### ▶ View logs for a stack
+
+```bash
+make logs-http
+```
+
+### ▶ Rebuild all containers
+
+```bash
+make build
+```
+
+This replaces the older manual `cd <folder> && docker compose up -d` workflow.
 
 ---
 
-## **3. Start Each Service Individually**
-
-Because each service has its own compose file:
-
-### **Start FTP**
+## **4. Check Running Containers**
 
 ```bash
-cd ftp
-docker compose up -d
-cd ..
-```
-
-### **Start HTTP**
-
-```bash
-cd http
-docker compose up -d
-cd ..
-```
-
-### **Start SMTP**
-
-```bash
-cd smtp
-docker compose up -d
-cd ..
-```
-
-### **Start DNS**
-
-```bash
-cd dns
-docker compose up -d
-cd ..
-```
-
-### **Start Client**
-
-```bash
-cd client
-docker compose up -d
-cd ..
-```
-
----
-
-## **4. Verify Running Containers**
-
-```bash
-docker ps
+make ps
 ```
 
 You should see:
@@ -181,49 +176,63 @@ You should see:
 * dns-server
 * forensic-client
 
+POP3 and Telnet will appear later once implemented.
+
 ---
 
-## **5. Generate Traffic for Wireshark Captures**
+## **5. Generate Traffic (Client Side)**
 
-Open a shell inside the forensic client:
+Open a shell in the client container:
 
 ```bash
 docker exec -it forensic-client sh
 ```
 
-### **FTP – Plaintext Credentials**
+or use the Makefile:
+
+```bash
+make run-traffic
+```
+
+### **Example Traffic Commands**
+
+#### FTP – Plaintext Login
 
 ```bash
 ftp 192.168.10.10
 ```
 
-### **HTTP – POST Login Sniffing**
+#### HTTP – Sniffable POST Login
 
 ```bash
 curl -d "user=test&pass=1234" http://192.168.10.20/login
 ```
 
-### **SMTP – Plaintext Email**
+#### SMTP – Plaintext Email
 
 ```bash
 echo -e "EHLO test\nMAIL FROM:<a@test>\nRCPT TO:<b@test>\nDATA\nHallo Welt\n.\nQUIT" \
  | nc 192.168.10.30 1025
 ```
 
-### **DNS – Query Leakage**
+#### DNS – Metadata Leakage
 
 ```bash
 dig @192.168.10.40 google.com
 ```
 
+#### POP3 / Telnet
+
+*Not yet implemented — coming soon*
+
 ---
 
-## **6. Capture Traffic with Wireshark**
+## **6. Capture Traffic With Wireshark**
 
-### On your host machine:
+On the host:
 
-1. Select the Docker network interface
-2. Apply useful filters:
+1. Select the Docker NIC (usually `Ethernet vEthernet (Docker)` or similar)
+2. Apply filters:
 
 ```
 ftp
@@ -233,56 +242,56 @@ dns
 tcp.stream eq 1
 ```
 
-3. Reconstruct plaintext credentials and data transfers.
+3. Follow streams to recover plaintext data and credentials.
 
 ---
 
 # **FAQ**
 
-### ❓ Why use Docker instead of Virtual Machines?
+### ❓ Why Docker instead of VMs?
 
-* Faster startup
-* Lower resource usage
-* Cleaner isolation
-* Easier version control
-* Perfect reproducibility
+* Faster
+* Lightweight
+* Easy to reproduce
+* Versioned in git
+* Safer isolation
 
 ---
 
-### ❓ Can this harm my real network?
+### ❓ Can it harm my real network?
 
 No — as long as:
 
-* You keep everything in Docker
-* You do not expose ports unnecessarily
-* You do not bridge the containers into your LAN
+* You keep everything inside Docker
+* You do not publish external ports unnecessarily
+* You do not bridge the Docker network
 
 ---
 
 ### ❓ Does this simulate real attacks?
 
-Yes — you will capture **real plaintext passwords**, emails, and DNS data.
-
-This is exactly how attackers exploit insecure protocols.
+Yes.
+You will capture **real plaintext credentials**, emails, and DNS queries exactly as attackers would.
 
 ---
 
 ### ❓ Can I extend this lab?
 
-Yes! Suggestions:
+Absolutely. Future modules may include:
 
-* Telnet server
-* POP3 server
-* IMAP without TLS
-* ARP spoofing with Ettercap
-* Custom Python C2 channel
+* Telnet (planned)
+* POP3 (planned)
+* IMAP (unencrypted)
+* ARP spoofing scenarios
+* MITM attacks using Kali containers
+* Custom malware/C2 traffic simulation
 
 ---
 
-### ❓ Where should I save PCAP files?
+### ❓ Where should I save PCAPs?
 
-A recommended folder:
+Recommended folder:
 
 ```
-/analysis/pcap/
+analysis/pcap/
 ```

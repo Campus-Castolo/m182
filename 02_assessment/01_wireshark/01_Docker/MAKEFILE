@@ -1,44 +1,179 @@
-SHELL := powershell.exe
-.SHELLFLAGS := -NoProfile -ExecutionPolicy Bypass -Command
+# ============================================================
+# Multi-stack Docker Makefile
+#
+# Layout (relative to this Makefile):
+#   ftp/docker-compose.yml
+#   http/docker-compose.yml
+#   smtp/docker-compose.yml
+#   dns/docker-compose.yml
+#   client/docker-compose.yml
+#   scripts/generate-traffic.sh
+#
+# Usage examples:
+#   make help
+#   make up              # start all stacks
+#   make up-ftp          # start only ftp stack
+#   make down            # stop all stacks
+#   make logs-http       # follow logs for http stack
+#   make build           # build images for all stacks
+#   make ps              # show containers for all stacks
+#   make run-traffic     # run scripts/generate-traffic.sh
+#
+# Override docker command if needed:
+#   make up COMPOSE="docker-compose"
+# ============================================================
 
-SERVICES = ftp http smtp dns client
+# List of all stacks (directories with docker-compose.yml)
+STACKS := ftp http smtp dns client
 
-CHECK_ICON = [CHECK]
-START_ICON = [START]
-STOP_ICON  = [STOP]
-OK_ICON    = [OK]
-FAIL_ICON  = [FAIL]
-LOG_ICON   = [LOG]
-CLEAN_ICON = [CLEAN]
-TIME_ICON  = [TIME]
-STATUS_ICON= [STATUS]
+# Default compose command (Docker Desktop: "docker compose")
+COMPOSE ?= docker compose
 
-.PHONY: banner check up down rebuild logs status clean traffic
+# Traffic generation script
+TRAFFIC_SCRIPT := scripts/generate-traffic.sh
 
-banner:
-	@echo ========================================
-	@echo      FORENSIC LAB DOCKER AUTOMATION
-	@echo ========================================
+# Default target
+.DEFAULT_GOAL := help
 
-check: banner
-	@powershell -NoProfile -Command "Write-Host '$(CHECK_ICON) Checking service directories...'; foreach ($$d in '$(SERVICES)'.Split(' ')) { if (Test-Path \"$$d/docker-compose.yml\") { Write-Host '$(OK_ICON) Found:' $$d } else { Write-Host '$(FAIL_ICON) Missing:' $$d; exit 1 }}; Write-Host '$(OK_ICON) All compose files validated.'"
 
-up: check
-	@powershell -NoProfile -Command "foreach ($$d in '$(SERVICES)'.Split(' ')) { Write-Host '$(START_ICON) Starting' $$d '...'; $$start=Get-Date; docker compose -f \"$$d/docker-compose.yml\" up -d | Out-Null; $$sec=[int]((Get-Date)-$$start).TotalSeconds; Write-Host '$(OK_ICON) Started' $$d '(' $$sec 's )'}; Write-Host '$(OK_ICON) All services running.'"
+# ------------------------------------------------------------
+# Helpers (internal)
+# ------------------------------------------------------------
 
-down: banner
-	@powershell -NoProfile -Command "foreach ($$d in '$(SERVICES)'.Split(' ')) { Write-Host '$(STOP_ICON) Stopping' $$d; docker compose -f \"$$d/docker-compose.yml\" down | Out-Null }; Write-Host '$(OK_ICON) All services stopped.'"
+# Turn "ftp http" into "up-ftp up-http", etc.
+up_targets     := $(STACKS:%=up-%)
+down_targets   := $(STACKS:%=down-%)
+build_targets  := $(STACKS:%=build-%)
+pull_targets   := $(STACKS:%=pull-%)
+ps_targets     := $(STACKS:%=ps-%)
+logs_targets   := $(STACKS:%=logs-%)
+restart_targets:= $(STACKS:%=restart-%)
 
-rebuild: down up
+# Phony targets (they don't correspond to real files)
+.PHONY: help list \
+        up down build pull ps logs restart \
+        $(up_targets) $(down_targets) $(build_targets) \
+        $(pull_targets) $(ps_targets) $(logs_targets) $(restart_targets) \
+        run-traffic clean orphan-prune
 
-logs: banner
-	@powershell -NoProfile -Command "foreach ($$d in '$(SERVICES)'.Split(' ')) { Write-Host ''; Write-Host '$(LOG_ICON) Logs for' $$d; docker compose -f \"$$d/docker-compose.yml\" logs --tail=50 }"
 
-status: banner
-	@powershell -NoProfile -Command "Write-Host 'SERVICE   STATUS'; Write-Host '------------------'; foreach ($$d in '$(SERVICES)'.Split(' ')) { $$s = docker compose -f \"$$d/docker-compose.yml\" ps --format '{{.State}}'; Write-Host $$d ':' $$s }"
+# ------------------------------------------------------------
+# Top-level commands (all stacks)
+# ------------------------------------------------------------
 
-clean: down
-	@powershell -NoProfile -Command "Write-Host '$(CLEAN_ICON) Cleaning Docker system...'; docker system prune -af; Write-Host '$(OK_ICON) Cleanup complete.'"
+## Show this help message
+help:
+	@echo ""
+	@echo "Available targets:"
+	@echo "  help              - Show this help"
+	@echo "  list              - List all defined stacks"
+	@echo ""
+	@echo "  up                - Start all stacks (detached)"
+	@echo "  down              - Stop all stacks"
+	@echo "  build             - Build images for all stacks"
+	@echo "  pull              - Pull images for all stacks"
+	@echo "  ps                - Show container status for all stacks"
+	@echo "  logs              - Tail logs for all stacks"
+	@echo "  restart           - Restart all stacks"
+	@echo ""
+	@echo "  up-<stack>        - Start a specific stack (e.g. up-http)"
+	@echo "  down-<stack>      - Stop a specific stack"
+	@echo "  build-<stack>     - Build images for a specific stack"
+	@echo "  pull-<stack>      - Pull images for a specific stack"
+	@echo "  ps-<stack>        - Show containers for a specific stack"
+	@echo "  logs-<stack>      - Tail logs for a specific stack"
+	@echo "  restart-<stack>   - Restart a specific stack"
+	@echo ""
+	@echo "  run-traffic       - Run scripts/generate-traffic.sh"
+	@echo "  orphan-prune      - Remove stopped containers and unused networks"
+	@echo ""
 
-traffic: banner
-	@powershell -NoProfile -Command "docker exec -it forensic-client powershell.exe -File C:/scripts/generate-traffic.ps1"
+## List all stacks (compose projects)
+list:
+	@echo "Stacks:"
+	@$(foreach stack,$(STACKS),echo "  - $(stack)";)
+
+
+## Start all stacks
+up: $(up_targets)
+
+## Stop all stacks
+down: $(down_targets)
+
+## Build images for all stacks
+build: $(build_targets)
+
+## Pull images for all stacks
+pull: $(pull_targets)
+
+## Show container status for all stacks
+ps: $(ps_targets)
+
+## Tail logs for all stacks (Ctrl+C to exit)
+logs: $(logs_targets)
+
+## Restart all stacks
+restart: $(restart_targets)
+
+
+# ------------------------------------------------------------
+# Per-stack pattern rules
+#
+# These assume docker-compose.yml is located at:
+#   <stack>/docker-compose.yml
+# Example: ftp/docker-compose.yml
+# ------------------------------------------------------------
+
+# Start a stack
+up-%:
+	@echo ">>> [UP] Starting stack '$*'"
+	$(COMPOSE) -f $*/docker-compose.yml up -d
+
+# Stop a stack
+down-%:
+	@echo ">>> [DOWN] Stopping stack '$*'"
+	$(COMPOSE) -f $*/docker-compose.yml down
+
+# Build stack images
+build-%:
+	@echo ">>> [BUILD] Building stack '$*'"
+	$(COMPOSE) -f $*/docker-compose.yml build
+
+# Pull stack images
+pull-%:
+	@echo ">>> [PULL] Pulling images for stack '$*'"
+	$(COMPOSE) -f $*/docker-compose.yml pull
+
+# Show stack containers
+ps-%:
+	@echo ">>> [PS] Containers for stack '$*'"
+	$(COMPOSE) -f $*/docker-compose.yml ps
+
+# Tail stack logs
+logs-%:
+	@echo ">>> [LOGS] Tailing logs for stack '$*' (Ctrl+C to stop)"
+	$(COMPOSE) -f $*/docker-compose.yml logs -f
+
+# Restart stack
+restart-%: down-% up-% ;
+
+
+# ------------------------------------------------------------
+# Traffic generation and maintenance
+# ------------------------------------------------------------
+
+## Run the traffic generation script
+run-traffic:
+	@echo ">>> [TRAFFIC] Running $(TRAFFIC_SCRIPT)"
+	@if [ ! -f "$(TRAFFIC_SCRIPT)" ]; then \
+	    echo "ERROR: $(TRAFFIC_SCRIPT) not found"; \
+	    exit 1; \
+	fi
+	@chmod +x "$(TRAFFIC_SCRIPT)" || true
+	@"$(TRAFFIC_SCRIPT)"
+
+## Remove stopped containers and unused networks (safe-ish cleanup)
+orphan-prune:
+	@echo ">>> [CLEAN] Pruning stopped containers and unused networks"
+	@docker container prune --force
+	@docker network prune --force
