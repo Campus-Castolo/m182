@@ -1,45 +1,44 @@
-# ===============================
-#  Docker Forensic Lab Automation
-# ===============================
+SHELL := powershell.exe
+.SHELLFLAGS := -NoProfile -ExecutionPolicy Bypass -Command
 
 SERVICES = ftp http smtp dns client
 
-.PHONY: up down rebuild traffic logs clean network
+CHECK_ICON = [CHECK]
+START_ICON = [START]
+STOP_ICON  = [STOP]
+OK_ICON    = [OK]
+FAIL_ICON  = [FAIL]
+LOG_ICON   = [LOG]
+CLEAN_ICON = [CLEAN]
+TIME_ICON  = [TIME]
+STATUS_ICON= [STATUS]
 
-# Start all services (individual docker-compose files)
-up:
-	@echo ">>> Starting forensic lab services..."
-	@for dir in $(SERVICES); do \
-		echo ">>> Starting $$dir"; \
-		docker compose -f $$dir/docker-compose.yml up -d; \
-	done
-	@echo ">>> All services started."
+.PHONY: banner check up down rebuild logs status clean traffic
 
-# Stop all services
-down:
-	@echo ">>> Stopping all services..."
-	@for dir in $(SERVICES); do \
-		echo ">>> Stopping $$dir"; \
-		docker compose -f $$dir/docker-compose.yml down; \
-	done
+banner:
+	@echo ========================================
+	@echo      FORENSIC LAB DOCKER AUTOMATION
+	@echo ========================================
 
-# Rebuild everything
+check: banner
+	@powershell -NoProfile -Command "Write-Host '$(CHECK_ICON) Checking service directories...'; foreach ($$d in '$(SERVICES)'.Split(' ')) { if (Test-Path \"$$d/docker-compose.yml\") { Write-Host '$(OK_ICON) Found:' $$d } else { Write-Host '$(FAIL_ICON) Missing:' $$d; exit 1 }}; Write-Host '$(OK_ICON) All compose files validated.'"
+
+up: check
+	@powershell -NoProfile -Command "foreach ($$d in '$(SERVICES)'.Split(' ')) { Write-Host '$(START_ICON) Starting' $$d '...'; $$start=Get-Date; docker compose -f \"$$d/docker-compose.yml\" up -d | Out-Null; $$sec=[int]((Get-Date)-$$start).TotalSeconds; Write-Host '$(OK_ICON) Started' $$d '(' $$sec 's )'}; Write-Host '$(OK_ICON) All services running.'"
+
+down: banner
+	@powershell -NoProfile -Command "foreach ($$d in '$(SERVICES)'.Split(' ')) { Write-Host '$(STOP_ICON) Stopping' $$d; docker compose -f \"$$d/docker-compose.yml\" down | Out-Null }; Write-Host '$(OK_ICON) All services stopped.'"
+
 rebuild: down up
 
-# Run traffic generator inside the client container
-traffic:
-	@echo ">>> Running traffic simulation..."
-	@docker exec -it forensic-client sh /scripts/generate-traffic.sh
+logs: banner
+	@powershell -NoProfile -Command "foreach ($$d in '$(SERVICES)'.Split(' ')) { Write-Host ''; Write-Host '$(LOG_ICON) Logs for' $$d; docker compose -f \"$$d/docker-compose.yml\" logs --tail=50 }"
 
-# Show logs of all containers
-logs:
-	@for dir in $(SERVICES); do \
-		echo ">>> Logs for $$dir"; \
-		docker compose -f $$dir/docker-compose.yml logs --tail=50; \
-	done
+status: banner
+	@powershell -NoProfile -Command "Write-Host 'SERVICE   STATUS'; Write-Host '------------------'; foreach ($$d in '$(SERVICES)'.Split(' ')) { $$s = docker compose -f \"$$d/docker-compose.yml\" ps --format '{{.State}}'; Write-Host $$d ':' $$s }"
 
-# Completely clean environment
 clean: down
-	@echo ">>> Removing unused Docker resources..."
-	docker system prune -af
+	@powershell -NoProfile -Command "Write-Host '$(CLEAN_ICON) Cleaning Docker system...'; docker system prune -af; Write-Host '$(OK_ICON) Cleanup complete.'"
 
+traffic: banner
+	@powershell -NoProfile -Command "docker exec -it forensic-client powershell.exe -File C:/scripts/generate-traffic.ps1"
