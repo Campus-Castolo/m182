@@ -10,7 +10,9 @@ services:
       address=/test.local/192.168.10.20
     ]
     cap_add:
+      - NET_RAW
       - NET_ADMIN
+    priviliged: true
     volumes:
       - ./dnsmasq.conf:/etc/dnsmasq.conf
     networks:

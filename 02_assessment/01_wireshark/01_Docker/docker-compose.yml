@@ -1,0 +1,13 @@
+# a docker-compose to rule them all using docker include
+# make sure include new services here under the "include"
+
+name: wireshark-lab
+
+include:
+  - ./http/docker-compose.yml
+  - ./client/docker-compose.yml
+  - ./ftp/docker-compose.yml
+  - ./dns/docker-compose.yml
+  - ./smtp/docker-compose.yml
+
+services: {}
