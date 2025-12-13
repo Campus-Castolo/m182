@@ -42,6 +42,9 @@ http-down:
 
 client-up:
 	docker-compose -f $(CLIENT-PATH) up -d
-	
+
 client-down:
 	docker-compose -f $(CLIENT-PATH) down
+
+make-traffic:
+	./helpers/make_traffic.sh

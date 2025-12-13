@@ -2,16 +2,16 @@ services:
   dns-server:
     image: andyshinn/dnsmasq:2.78
     container_name: dns-server
-    command: [
-      log-queries
-      log-facility=/var/log/dnsmasq.log
-      address=/test.local/192.168.10.20
-    ]
+    command:
+      - "-k"
+      - "--log-facility=-"
+      - "-C"
+      - "/etc/dnsmasq.conf"
     cap_add:
       - NET_RAW
       - NET_ADMIN
     volumes:
-      - ./dnsmasq.conf:/etc/dnsmasq.conf
+      - ./dnsmasq.conf:/etc/dnsmasq.conf:ro
     networks:
       forensic-net:
         ipv4_address: 192.168.10.40
