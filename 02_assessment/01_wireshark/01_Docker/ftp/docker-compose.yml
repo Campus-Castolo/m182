@@ -1,6 +1,6 @@
 services:
   ftp-server:
-    image: stilliard/pure-ftpd:hardened
+    image: stilliard/pure-ftpd:latest
     container_name: ftp-server
     environment:
       PUBLICHOST: "192.168.10.10"
