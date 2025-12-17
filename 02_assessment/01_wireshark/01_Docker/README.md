@@ -72,7 +72,7 @@ All containers are restricted to an internal Docker network to ensure safety.
 ## **Repository Structure**
 
 ```
-Docker/
+docker/
  ├── ftp/
  │    └── docker-compose.yml
  ├── http/
