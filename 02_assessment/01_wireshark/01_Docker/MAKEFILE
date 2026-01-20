@@ -46,5 +46,5 @@ client-up:
 client-down:
 	docker-compose -f $(CLIENT-PATH) down
 
-make-traffic:
-	./helpers/make_traffic.sh
+traffic:
+	powershell -ExecutionPolicy Bypass -File ./helper_scripts/generate-traffic.ps1
