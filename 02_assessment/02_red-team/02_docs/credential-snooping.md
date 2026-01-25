@@ -228,12 +228,18 @@ Add these as screenshots in your final hand-in:
 
 * **Figure 1 — FTP plaintext credentials**
   Wireshark: `tcp.stream == 1` → show frames **559** (USER) and **561** (PASS)
+<img width="1228" height="307" alt="image" src="https://github.com/user-attachments/assets/e412111c-d731-4f19-adff-1dcfcc3337b9" />
+
 
 * **Figure 2 — HTTP plaintext login POST**
   Wireshark: `tcp.stream == 4` → show **frame 611** (POST body with `user=` and `pass=`)
+<img width="1225" height="799" alt="image" src="https://github.com/user-attachments/assets/ae240aea-996d-427f-b20d-4b39297481c7" />
+
 
 * **Figure 3 — SMTP plaintext email content**
   Wireshark: `tcp.stream == 5` → show **frame 621** (MAIL FROM / RCPT TO / DATA + Subject/body)
+![Video Project](https://github.com/user-attachments/assets/43ead1a1-bd69-45ea-b2ba-ef46f8febfb5)
+
 
 ---
 
