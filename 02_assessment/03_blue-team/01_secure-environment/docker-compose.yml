@@ -1,0 +1,255 @@
+version: "3.9"
+
+name: blue-secure-lab
+
+networks:
+  dns-net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.30.0.0/24
+  web-net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.31.0.0/24
+  mail-net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.32.0.0/24
+  sftp-net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.33.0.0/24
+  capture-net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.40.0.0/24
+
+services:
+  unbound:
+    image: mvance/unbound:1.20.0
+    container_name: bt-unbound
+    user: "100:101"
+    read_only: true
+    tmpfs:
+      - /var/lib/unbound
+      - /var/run
+    cap_drop: [ "ALL" ]
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      - ./dns/unbound.conf:/opt/unbound/etc/unbound/unbound.conf:ro
+      - ./pki/dnssec/root.key:/opt/unbound/etc/unbound/root.key:ro
+    command: ["-d", "-c", "/opt/unbound/etc/unbound/unbound.conf"]
+    expose:
+      - "5353/tcp"
+      - "5353/udp"
+    networks:
+      dns-net:
+        ipv4_address: 172.30.0.2
+      capture-net:
+        ipv4_address: 172.40.0.2
+    healthcheck:
+      test: ["CMD-SHELL", "drill @127.0.0.1 -p 5353 cloudflare.com A || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    mem_limit: 256m
+    cpus: "0.50"
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }
+
+  web:
+    image: nginxinc/nginx-unprivileged:1.27-alpine
+    container_name: bt-web
+    read_only: true
+    tmpfs: [ "/var/cache/nginx", "/var/run" ]
+    cap_drop: [ "ALL" ]
+    cap_add: [ "NET_BIND_SERVICE" ]
+    security_opt: [ "no-new-privileges:true" ]
+    volumes:
+      - ./web/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./web/html:/usr/share/nginx/html:ro
+      - ./pki/web:/etc/nginx/pki:ro
+    ports:
+      - "127.0.0.1:8443:8443"
+    dns: [ "172.30.0.2" ]
+    networks:
+      web-net:
+        ipv4_address: 172.31.0.2
+      dns-net:
+        ipv4_address: 172.30.0.3
+      capture-net:
+        ipv4_address: 172.40.0.3
+    depends_on:
+      unbound:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- https://127.0.0.1:8443/ --no-check-certificate >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    mem_limit: 256m
+    cpus: "0.50"
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }
+
+  smtp:
+    build: { context: ./smtp, dockerfile: Dockerfile }
+    container_name: bt-smtp
+    read_only: true
+    tmpfs: [ "/tmp" ]
+    cap_drop: [ "ALL" ]
+    security_opt: [ "no-new-privileges:true" ]
+    environment:
+      SMTP_USER_FILE: /run/secrets/smtp_user
+      SMTP_PASS_FILE: /run/secrets/smtp_password
+      SMTP_REQUIRE_AUTH: "true"
+      SMTP_REQUIRE_TLS: "true"
+      SMTP_HOSTNAME: "smtp.lab.local"
+      LISTEN_STARTTLS: "1587"
+      LISTEN_SMTPS: "1465"
+      CERT_FILE: "/app/pki/smtp/server.crt"
+      KEY_FILE: "/app/pki/smtp/server.key"
+      CA_FILE: "/app/pki/ca/ca.crt"
+    secrets: [ smtp_user, smtp_password ]
+    volumes:
+      - ./pki:/app/pki:ro
+    expose: [ "1587/tcp", "1465/tcp" ]
+    networks:
+      mail-net:
+        ipv4_address: 172.32.0.2
+      dns-net:
+        ipv4_address: 172.30.0.4
+      capture-net:
+        ipv4_address: 172.40.0.4
+    depends_on:
+      unbound:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "python /app/healthcheck.py"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    mem_limit: 256m
+    cpus: "0.50"
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }
+
+  sftp:
+    build: { context: ./sftp, dockerfile: Dockerfile }
+    container_name: bt-sftp
+    read_only: true
+    tmpfs: [ "/tmp" ]
+    cap_drop: [ "ALL" ]
+    security_opt: [ "no-new-privileges:true" ]
+    environment:
+      SFTP_LISTEN: "2222"
+      SFTP_USER: "demo"
+      SFTP_ROOT: "/data"
+      AUTHORIZED_KEYS: "/app/authorized_keys/demo.pub"
+      HOST_KEY: "/app/host_keys/ssh_host_ed25519_key"
+    volumes:
+      - ./sftp/data:/data:rw
+      - ./pki/ssh/host_keys:/app/host_keys:ro
+      - ./pki/ssh/authorized_keys:/app/authorized_keys:ro
+    expose: [ "2222/tcp" ]
+    ports:
+      - "127.0.0.1:2222:2222"
+    networks:
+      sftp-net:
+        ipv4_address: 172.33.0.2
+      capture-net:
+        ipv4_address: 172.40.0.5
+    healthcheck:
+      test: ["CMD-SHELL", "python /app/healthcheck.py"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    mem_limit: 256m
+    cpus: "0.50"
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }
+
+  client:
+    image: alpine:3.20
+    container_name: bt-client
+    user: "1000:1000"
+    read_only: true
+    tmpfs: [ "/tmp", "/home/client" ]
+    cap_drop: [ "ALL" ]
+    security_opt: [ "no-new-privileges:true" ]
+    volumes:
+      - ./client:/client:ro
+      - ./pki:/pki:ro
+      - ./secrets:/run/secrets:ro
+    entrypoint: ["/bin/sh","-lc"]
+    command: ["apk add --no-cache openssh-client curl ca-certificates python3 py3-pip busybox-extras && pip3 install --no-cache-dir swaks >/dev/null && /client/run-tests.sh && sleep infinity"]
+    dns: [ "172.30.0.2" ]
+    networks:
+      dns-net:
+        ipv4_address: 172.30.0.10
+      web-net:
+        ipv4_address: 172.31.0.10
+      mail-net:
+        ipv4_address: 172.32.0.10
+      sftp-net:
+        ipv4_address: 172.33.0.10
+      capture-net:
+        ipv4_address: 172.40.0.10
+    depends_on:
+      web:
+        condition: service_healthy
+      smtp:
+        condition: service_healthy
+      sftp:
+        condition: service_healthy
+      unbound:
+        condition: service_healthy
+    mem_limit: 256m
+    cpus: "0.50"
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }
+
+  wireshark:
+    image: linuxserver/wireshark:latest
+    container_name: bt-wireshark
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Zurich
+    cap_drop: [ "ALL" ]
+    cap_add: [ "NET_ADMIN", "NET_RAW" ]
+    security_opt: [ "no-new-privileges:true" ]
+    shm_size: "1gb"
+    ports:
+      - "127.0.0.1:3000:3000"
+    volumes:
+      - ./wireshark/config:/config
+    networks: [ capture-net ]
+    restart: unless-stopped
+    mem_limit: 1024m
+    cpus: "1.00"
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }
+
+secrets:
+  smtp_user:
+    file: ./secrets/smtp_user.txt
+  smtp_password:
+    file: ./secrets/smtp_password.txt

@@ -1,23 +1,46 @@
+version: "3.8"
+
 services:
   dns-server:
-    image: andyshinn/dnsmasq:2.78
+    # Use a maintained dnsmasq image rather than an ancient one.
+    # 4km3/dnsmasq is a small Alpine-based image updated recently. :contentReference[oaicite:0]{index=0}
+    image: 4km3/dnsmasq:latest
     container_name: dns-server
+
+    # Let the image run dnsmasq normally; we push config via the file.
     command:
-      - "-k"
-      - "--log-facility=-"
-      - "-C"
-      - "/etc/dnsmasq.conf"
-    cap_add:
-      - NET_RAW
-      - NET_ADMIN
+      - dnsmasq
+      - "-k"                      # stay in foreground
+      - "--conf-file=/etc/dnsmasq.conf"
+
     volumes:
       - ./dnsmasq.conf:/etc/dnsmasq.conf:ro
+
     networks:
       forensic-net:
         ipv4_address: 192.168.10.40
+
+    # Expose DNS to the host/LAN.
+    # For *maximum* security, firewall these to your LAN only (e.g. 192.168.10.0/24).
     ports:
       - "53:53/udp"
       - "53:53/tcp"
+
+    # Filesystem hardening
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /run
+      - /var/run
+
+    # Drop raw-socket capability (less useful for an attacker).
+    cap_drop:
+      - NET_RAW
+
+    # Prevent privilege escalation via setuid binaries etc.
+    security_opt:
+      - no-new-privileges:true
+
     restart: unless-stopped
 
 networks:
