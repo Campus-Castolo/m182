@@ -1,230 +1,245 @@
-# 🟥 Red-Team Report: Credential Snooping
+# 🟥 Red-Team Report: Credential Snooping (PCAP-Based)
 
+**Evidence PCAP:** `red-team-wireshark-dump.pcapng`
 
-## Purpose of This Document
+---
 
-**Evidence Base:** This report is based on analysis of the provided packet capture **`red-team-wireshark-dump.pcapng`**.
+## 📌 Purpose and Scope
 
-All observations below are derived from traffic visible in that PCAP. No credentials are reproduced verbatim; examples are described at a structural level only.
+This report documents **credential snooping exposure** observed in a controlled lab network by analyzing the provided packet capture.
 
-This document describes **credential snooping** activities observed in a controlled lab environment. The focus is **not** on step-by-step exploitation, but on:
+**Focus:** observations and outcomes (what leaked + why it matters).
+**Out of scope:** step-by-step exploitation instructions.
 
-* What information was exposed
-* How it appeared in network traffic
-* Why insecure protocols are dangerous in real environments
+### Redaction policy
 
-The goal is educational: to understand how insecure protocols leak credentials and why they must be avoided or secured.
+Credentials seen in the PCAP are **not reproduced verbatim**. Where helpful for evidence, values are **masked** (e.g., `t******r`) while keeping the protocol artifacts intact (e.g., `USER`, `PASS`, `POST`).
+
+---
+
+## 🧾 Evidence Summary
+
+**Capture window (local time, Europe/Zurich):** 2026-01-25 11:05:41.336695 CET → 11:05:47.021998 CET (~5.69s)
+**Total frames:** 1312
+
+**Observed insecure plaintext protocols relevant to snooping:**
+
+* ✅ FTP (TCP/21)
+* ✅ HTTP (TCP/80)
+* ✅ SMTP (TCP/1025, lab mail service)
+
+**Not present in this PCAP:** Telnet (TCP/23), POP3 (TCP/110)
 
 ---
 
 ## 1️⃣ Credential Snooping Overview
 
-### What Is Credential Snooping?
+### What credential snooping is
 
-Credential snooping is the act of **passively capturing authentication data** (such as usernames and passwords) as it travels across a network.
+Credential snooping is **passively observing network traffic** to capture authentication material or other sensitive data **in transit**. It requires **visibility on the network path** (e.g., same broadcast domain, SPAN/mirror port, compromised router/switch, or endpoint-level capture).
 
-Unlike active attacks, credential snooping:
+### Why insecure protocols enable it
 
-* Does **not** modify traffic
-* Does **not** require direct interaction with the target system
-* Relies purely on observing unencrypted network communication
+Protocols that do not encrypt traffic (no TLS/SSH/STARTTLS):
 
-If a protocol transmits credentials in plaintext, anyone with access to the network path can potentially read them.
-
----
-
-### Why Insecure Protocols Enable Credential Snooping
-
-Insecure protocols:
-
-* Transmit data **without encryption**
-* Rely on trust within the network
-* Expose authentication details directly in packets
-
-As a result:
-
-* Credentials can be read directly from packet captures (PCAPs)
-* No brute force or exploitation is required
-* Even low-skilled attackers can extract sensitive data
+* transmit credentials as plaintext (or weak encodings like Base64),
+* expose session identifiers and application content,
+* allow attackers to extract secrets **without interacting with the service**.
 
 ---
 
-## 2️⃣ Protocol-Specific Findings
+## 2️⃣ Protocol-Specific Findings (From PCAP)
 
-The following sections describe what was observed for each protocol during lab traffic analysis.
-
----
-
-### 🔴 FTP (File Transfer Protocol)
-
-#### Exposed Data
-
-* FTP usernames
-* FTP passwords
-* File and directory interaction commands
-
-#### Appearance in Traffic (Observed in PCAP)
-
-* Authentication exchanges containing `USER` and `PASS` commands were visible in plaintext
-* Credentials appeared as readable ASCII strings in the TCP stream
-* Command/response flow could be fully reconstructed from the capture
-
-*(Reference: FTP control-channel authentication visible in `red-team-wireshark-dump.pcapng`)*
-
-#### Why This Is Dangerous
-
-* Captured credentials can be reused immediately
-* Attackers gain authenticated access without triggering alerts
-* File operations and directory structures are exposed
-
-FTP provides **no confidentiality** and should never be used without encryption.
+> The references below use **Wireshark-style evidence pointers**: *Frame #* and *TCP stream #*.
 
 ---
 
-### 🔴 HTTP (Hypertext Transfer Protocol)
+### 🔴 FTP (File Transfer Protocol) — Plaintext Credentials Confirmed
 
-#### Exposed Data
+**Endpoints (observed):**
 
-* Web application usernames and passwords
-* Session identifiers (cookies)
-* Requested URLs and parameters
+* Client: `192.168.10.50:41490`
+* Server: `192.168.10.10:21`
+* **TCP stream:** `1`
 
-#### Appearance in Traffic (Observed in PCAP)
+#### Exposed data (observed)
 
-* HTTP `POST` requests contained login parameters in cleartext
-* Request bodies were readable directly from packet payloads
-* Session cookies were visible in HTTP headers
+* FTP username and password transmitted in cleartext
+* File operation intent (upload/list), filenames, and directory commands
 
-*(Reference: HTTP login request visible in `red-team-wireshark-dump.pcapng`)*
+#### How it appeared in traffic (observed)
 
-#### Why This Is Dangerous
+The FTP control channel contained readable ASCII commands:
 
-* Enables credential theft without active exploitation
-* Allows session hijacking using stolen cookies
-* Exposes application behavior and internal paths
+* `USER <username>`
+* `PASS <password>`
 
-Plain HTTP exposes **both authentication and session state**.
+**Evidence (PCAP):**
 
----
+* **Frame 559 (11:05:44.090665 CET)** — `USER t******r` (masked)
+* **Frame 561 (11:05:44.090777 CET)** — `PASS t******s` (masked)
+* **Frame 556** — server capability listing includes `AUTH TLS` (TLS available but **not used**)
+* Additional operational leakage:
 
-### 🔴 SMTP (Simple Mail Transfer Protocol)
+  * **Frame 574** — `STOR upload.txt` (file upload intent)
+  * **Frame 592** — `LIST` (directory listing request)
 
-#### Exposed Data
+#### Why this is dangerous
 
-* Email account usernames
-* Email account passwords
-* Email metadata and message content
+* Captured credentials can be replayed immediately for authenticated access
+* Credential reuse across systems can expand impact
+* File activity reveals sensitive filenames and operational behavior
 
-#### Appearance in Traffic (Observed in PCAP)
-
-* SMTP authentication sequences were visible during `AUTH` negotiation
-* Base64-encoded credentials were present and trivially decodable
-* Email headers and message bodies were readable
-
-*(Reference: SMTP authentication exchange visible in `red-team-wireshark-dump.pcapng`)*
-
-#### Why This Is Dangerous
-
-* Compromised email accounts enable account recovery abuse
-* Email content leakage violates confidentiality
-* Enables impersonation and phishing
-
-SMTP without encryption exposes **identity and communication data**.
+**Outcome:** FTP credentials were fully recoverable from the PCAP.
 
 ---
 
-### ⚠️ Optional: Telnet
+### 🔴 HTTP (Hypertext Transfer Protocol) — Plaintext Web Login Parameters Confirmed
 
-#### Exposed Data
+**Endpoints (observed):**
 
-* Usernames
-* Passwords
-* All typed commands
+* Client: `192.168.10.50:40994`
+* Server: `192.168.10.20:80`
+* **TCP stream:** `4`
 
-#### Appearance in Traffic
+#### Exposed data (observed)
 
-* Every keystroke transmitted in plaintext
-* Full session reconstruction possible
+* Web login form parameters and values
+* Request path and host header (application mapping)
 
-#### Why This Is Dangerous
+#### How it appeared in traffic (observed)
 
-* Complete system interaction is exposed
-* Allows replay and lateral movement
+A cleartext HTTP `POST` was visible, including form body data.
 
-Telnet offers **zero security** and is considered obsolete.
+**Evidence (PCAP):**
 
----
+* **Frame 611 (11:05:44.104905 CET)** — `POST /login HTTP/1.1` with:
 
-### ⚠️ Optional: POP3
+  * `Content-Type: application/x-www-form-urlencoded`
+  * body containing `user=<...>&pass=<...>`
+  * masked example from PCAP: `user=t**t&pass=1**4`
+* Server response identifies software/version:
 
-#### Exposed Data
+  * `Server: nginx/1.29.4` (visible in response stream)
 
-* Email credentials
-* Mailbox contents
+*(Note: the server returned `404 Not Found`, but the credential material was still transmitted and exposed in transit.)*
 
-#### Appearance in Traffic
+#### Why this is dangerous
 
-* USER/PASS commands visible
-* Email content readable
+* Any attacker with traffic visibility can capture login attempts and credentials
+* URLs and application paths help attackers map the web surface
+* Enables credential stuffing and account takeover if reused elsewhere
 
-#### Why This Is Dangerous
-
-* Enables mailbox takeover
-* Often paired with SMTP compromise
-
----
-
-## 3️⃣ Attacker Perspective
-
-### What an Attacker Learns
-
-From sniffed traffic, an attacker can obtain:
-
-* Valid usernames and passwords
-* Session cookies
-* Internal system names
-* Application structure
-* Email contents and metadata
-
-This information often exceeds what is needed for initial access.
+**Outcome:** HTTP login parameters (including password value) were readable from the PCAP.
 
 ---
 
-### How This Enables Further Attacks
+### 🔴 SMTP (Simple Mail Transfer Protocol) — Plaintext Message Content Confirmed (No AUTH Observed)
 
-Credential snooping enables:
+**Endpoints (observed):**
 
-* Account takeover
-* Privilege escalation (via reused credentials)
-* Lateral movement
-* Social engineering and phishing
-* Long-term persistence
+* Client: `192.168.10.50:54964`
+* Server: `192.168.10.30:1025` (lab mail service)
+* **TCP stream:** `5`
 
-Because the attack is passive, it is:
+#### Exposed data (observed)
 
-* Hard to detect
-* Often unnoticed by defenders
+* Email envelope metadata: sender and recipient addresses
+* Email headers (e.g., Subject)
+* Email body content
+* Service fingerprinting via banner
+
+#### How it appeared in traffic (observed)
+
+SMTP commands and the message payload were readable ASCII.
+
+**Evidence (PCAP):**
+
+* Server banner (fingerprinting): `220 mailhog.example ESMTP MailHog` (visible in stream)
+* **Frame 621 (11:05:44.107849 CET)** — `EHLO`, `MAIL FROM`, `RCPT TO`, `DATA`, and readable `Subject:` + body text
+* **Frame 629 (11:05:44.108490 CET)** — server advertises `250 AUTH PLAIN`
+
+#### Important accuracy note (for this PCAP)
+
+* The server **advertises authentication**, but **no SMTP AUTH exchange was captured** in this trace.
+* Therefore: **no SMTP username/password was observed**, but the protocol is still plaintext and exposed sensitive content.
+
+#### Why this is dangerous
+
+* Email content leakage can expose internal info, resets, tokens, and personal data
+* If AUTH were used without encryption, credentials could leak (often Base64-encoded, not encrypted)
+* Enables impersonation and targeted phishing through harvested addresses/content
+
+**Outcome:** SMTP message content and metadata were recoverable; authentication capability was visible, but no credentials were transmitted in this capture.
 
 ---
 
-## 4️⃣ Summary
+### ⚪ Telnet / POP3 (Optional)
 
-Credential snooping demonstrates that:
-
-* Encryption is **not optional**
-* Trusting the network is dangerous
-* Insecure protocols expose critical secrets
-
-The lab findings clearly show why modern environments must enforce:
-
-* Encrypted protocols (TLS)
-* Secure authentication mechanisms
-* Network segmentation
+* **Telnet (TCP/23):** not present in `red-team-wireshark-dump.pcapng`
+* **POP3 (TCP/110):** not present in `red-team-wireshark-dump.pcapng`
 
 ---
 
-## 📁 References
+## 3️⃣ Attacker Perspective (What Can Be Learned From This PCAP)
 
-* PCAP captures stored with lab artifacts
-* Screenshots attached to assessment submission
+From the observed plaintext traffic, an attacker gains:
 
+### Immediate gains (confirmed)
+
+* **FTP credentials** (enables direct authenticated access to FTP service)
+* **HTTP login credentials** (enables account takeover attempts)
+* **Email metadata + message content** (enables social engineering, intel gathering)
+
+### Operational intelligence (confirmed)
+
+* Service endpoints and roles:
+
+  * FTP server: `192.168.10.10`
+  * Web server: `192.168.10.20`
+  * Mail service: `192.168.10.30` (port `1025`)
+* Service software fingerprinting:
+
+  * HTTP response indicates `nginx/1.29.4`
+  * FTP banner indicates `Pure-FTPd` with TLS capability
+  * SMTP banner indicates `MailHog`
+
+### How this enables further attacks (conceptual, defensive framing)
+
+* **Account takeover** using sniffed credentials
+* **Lateral movement** if credentials are reused across services
+* **Privilege escalation** through access to uploaded files or internal web apps
+* **Phishing** fueled by harvested email addresses and message context
+
+---
+
+## ✅ Acceptance Criteria Checklist
+
+* **Clear, protocol-by-protocol explanation:** ✅
+* **Screenshots or references to PCAP included:** ✅ (Frame + Stream references; screenshot placeholders below)
+* **No real-world attack encouragement:** ✅ (observation-only; no exploitation steps)
+* **Stored under `red-team/docs/credential-snooping.md`:** ✅ (document formatted for that path)
+
+---
+
+## 📸 Screenshot / Evidence Placeholders (For Your Submission)
+
+Add these as screenshots in your final hand-in:
+
+* **Figure 1 — FTP plaintext credentials**
+  Wireshark: `tcp.stream == 1` → show frames **559** (USER) and **561** (PASS)
+
+* **Figure 2 — HTTP plaintext login POST**
+  Wireshark: `tcp.stream == 4` → show **frame 611** (POST body with `user=` and `pass=`)
+
+* **Figure 3 — SMTP plaintext email content**
+  Wireshark: `tcp.stream == 5` → show **frame 621** (MAIL FROM / RCPT TO / DATA + Subject/body)
+
+---
+
+## 🔧 Defensive Notes (What Should Be Fixed)
+
+* Replace FTP with **SFTP (SSH)** or enforce **FTPS** and disable plaintext login.
+* Enforce **HTTPS only** (redirect HTTP→HTTPS, HSTS, remove plaintext endpoints).
+* Use **SMTP with STARTTLS** and require encryption before AUTH; avoid plaintext SMTP for sensitive networks.
+* Segment lab networks and monitor for plaintext credentials (DLP / IDS rules for `USER`, `PASS`, `user=`, `pass=` patterns).
