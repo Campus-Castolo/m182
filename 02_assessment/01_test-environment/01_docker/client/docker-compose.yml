@@ -11,6 +11,9 @@ services:
         ipv4_address: 192.168.10.50
     tty: true
     stdin_open: true
+    ports:
+      - "3000:3000"  # noVNC
+      - "3001:3001"  # VNC
 
 networks:
   forensic-net:

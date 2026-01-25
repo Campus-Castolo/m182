@@ -6,6 +6,7 @@ DNS-PATH =? ./dns/docker-compose.yml
 SMTP-PATH =? ./smtp/docker-compose.yml
 HTTP-PATH =? ./http/docker-compose.yml
 CLIENT-PATH =? ./client/docker-compose.yml
+WIRESHARK-PATH =? ./wireshark/docker-compose.yml
 
 # The master docker-compose file that includes all services
 MASTER-PATH ?= ./docker-compose.yml
@@ -45,6 +46,12 @@ client-up:
 
 client-down:
 	docker-compose -f $(CLIENT-PATH) down
+
+wireshark-up:
+	docker-compose -f $(WIRESHARK-PATH) up -d
+
+wireshark-down:
+	docker-compose -f $(WIRESHARK-PATH) down
 
 traffic:
 	powershell -ExecutionPolicy Bypass -File ./helper_scripts/generate-traffic.ps1

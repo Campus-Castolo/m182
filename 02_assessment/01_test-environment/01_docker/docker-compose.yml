@@ -9,5 +9,6 @@ include:
   - ./ftp/docker-compose.yml
   - ./dns/docker-compose.yml
   - ./smtp/docker-compose.yml
+  - ./wireshark/docker-compose.yml
 
 services: {}

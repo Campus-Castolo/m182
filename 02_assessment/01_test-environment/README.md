@@ -1,3 +1,26 @@
+# **Navigation**
+
+> [master docker compose](./01_docker/docker-compose.yml)
+> [docs](./02_docs/)
+
+
+- [**Navigation**](#navigation)
+- [**Network Forensics Lab – Wireshark \& Autopsy (Docker Simulation)**](#network-forensics-lab--wireshark--autopsy-docker-simulation)
+    - [*Credential Snooping in Unsafe Network Protocols*](#credential-snooping-in-unsafe-network-protocols)
+  - [**Overview**](#overview)
+  - [**Project Goals**](#project-goals)
+  - [**Simulated Docker Environment**](#simulated-docker-environment)
+  - [**Core Components**](#core-components)
+    - [**1. Wireshark Analysis**](#1-wireshark-analysis)
+    - [**2. Credential Snooping Demonstrations**](#2-credential-snooping-demonstrations)
+    - [**3. Autopsy Forensic Analysis**](#3-autopsy-forensic-analysis)
+  - [**Bonus Topics (High Engagement)**](#bonus-topics-high-engagement)
+  - [**Deliverables**](#deliverables)
+  - [**Link Placeholders**](#link-placeholders)
+  - [**Security Note**](#security-note)
+
+
+
 # **Network Forensics Lab – Wireshark & Autopsy (Docker Simulation)**
 
 ### *Credential Snooping in Unsafe Network Protocols*

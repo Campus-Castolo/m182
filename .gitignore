@@ -4,3 +4,4 @@
 *.crt
 *.csr
 *certs
+*.claude
