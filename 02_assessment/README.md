@@ -3,7 +3,6 @@
 
 > [Simulated Test Environment](./01_test-environment/01_docker/README.md)
 > [Red Team](./02_red-team/README.md)
-> [Blue Team](./03_blue-team/README.md)
 
 
 
